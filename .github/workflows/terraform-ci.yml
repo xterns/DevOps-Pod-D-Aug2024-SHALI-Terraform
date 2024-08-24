@@ -1,0 +1,74 @@
+name: Terraform CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/*'
+  pull_request:
+    branches:
+      - main
+      - 'feature/*'
+
+env:
+  TF_VERSION: "1.3.5"
+  AWS_REGION: "eu-west-2"
+
+jobs:
+  terraform:
+    name: 'Terraform Workflow'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: .
+
+    - name: Terraform Validate
+      run: terraform validate
+      working-directory: .
+
+    - name: Terraform Plan for Sandbox Environment
+      if: github.ref != 'refs/heads/main'
+      run: terraform plan -out=tfplan
+      working-directory: .
+
+    - name: Apply to Sandbox Environment
+      if: github.ref != 'refs/heads/main'
+      run: terraform apply -auto-approve tfplan
+      working-directory: .
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
+
+    - name: Terraform Plan for Production
+      if: github.ref == 'refs/heads/main'
+      run: terraform plan -out=tfplan
+      working-directory: .
+
+    - name: Manual Approval for Production
+      if: github.ref == 'refs/heads/main'
+      uses: hmarr/auto-approve-action@v2
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Apply to Production Environment
+      if: github.ref == 'refs/heads/main'
+      run: terraform apply -auto-approve tfplan
+      working-directory: .
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
+
