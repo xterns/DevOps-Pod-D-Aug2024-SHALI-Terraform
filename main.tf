@@ -1,11 +1,7 @@
-# main Terraform configuration file
-
-provider "aws" {
-  region = "us-west-2"
+terraform {
+  backend "s3" {
+    bucket = "devops-pod-d-for-terraform"
+    key    = "xtern/DevOps-Pod-D-Aug2024-SHALI-Terraform/dev/terraform.tfstate"
+    region = "us-east-1"
+  }
 }
-
-resource "aws_s3_bucket" "example" {
-  bucket = "example-bucket-${random_pet.name.id}"
-}
-
-
