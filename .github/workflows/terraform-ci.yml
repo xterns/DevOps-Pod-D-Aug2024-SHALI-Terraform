@@ -12,7 +12,7 @@ on:
 
 env:
   TF_VERSION: "1.3.5"
-  AWS_REGION: "eu-west-2"
+  AWS_REGION: "us-east-1"
 
 jobs:
   terraform:
@@ -31,6 +31,10 @@ jobs:
     - name: Terraform Init
       run: terraform init
       working-directory: .
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
 
     - name: Terraform Validate
       run: terraform validate
@@ -40,6 +44,10 @@ jobs:
       if: github.ref != 'refs/heads/main'
       run: terraform plan -out=tfplan
       working-directory: .
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
 
     - name: Apply to Sandbox Environment
       if: github.ref != 'refs/heads/main'
@@ -50,10 +58,14 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
 
-    - name: Terraform Plan for Production
+    - name: Terraform Plan for Non-Sandbox Environments
       if: github.ref == 'refs/heads/main'
       run: terraform plan -out=tfplan
       working-directory: .
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
 
     - name: Manual Approval for Production
       if: github.ref == 'refs/heads/main'
@@ -63,12 +75,5 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Apply to Production Environment
-      if: github.ref == 'refs/heads/main'
-      run: terraform apply -auto-approve tfplan
-      working-directory: .
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
+    # The Apply to Production Environment step is intentionally omitted to prevent deployment to production directly from the workflow
 
