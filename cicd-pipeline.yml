@@ -1,0 +1,103 @@
+name: Github Actions CI/CD pipeline for Terraform.
+run-name: ${{ github.actor }} Running Github Actions CI/CD pipeline for Terraform
+
+# The workflow triggered on push and pull request events
+on:
+  push:
+    branches:
+      - main
+      - feature/*
+  pull_request:
+    branches:
+      - main
+      - feature/*
+
+env:
+       
+jobs:
+    terraform:
+      name: Initialize Terraform
+      runs-on: self-hosted
+      permissions:
+        contents: read
+        issues: write
+    
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+  
+        - name: Set up Terraform
+          uses: hashicorp/setup-terraform@v3
+         
+        - name: Initialize Terraform
+          run: terraform init
+  
+        - name: Validate Terraform
+          run: terraform validate
+           
+    # The workflow plans and applies Terraform changes to the "sandbox" 
+    # environment when working on feature branches.
+        - name: Plan Terraform changes (Sandbox only)
+          id: plan-sandbox
+          if: github.ref != 'refs/heads/main'
+          run: terraform plan -var-file=Environments/sandbox/terraform.tfvars -out=plan-sandbox.tfplan
+  
+        - name: Apply Terraform changes (Sandbox only)
+          if: github.ref != 'refs/heads/main' && github.event_name != 'pull_request'
+          run: terraform apply -auto-approve plan-sandbox.tfplan
+    # For other environments, the workflow only plans changes on feature 
+    # branches but doesn't apply them.
+        - name: Plan Terraform changes on prod
+          id: plan-prod
+          if: github.ref != 'refs/heads/main'
+          run: terraform plan -var-file=Environments/prod/terraform.tfvars -out=plan-prod.tfplan
+  
+        - name: Plan Terraform changes on staging
+          id: plan-staging
+          if: github.ref != 'refs/heads/main'
+          run: terraform plan -var-file=Environments/staging/terraform.tfvars -out=plan-staging.tfplan
+  # The workflow ensures that terraform apply can only be executed on the main branch for
+  # production environments. And A manual approval step is implemented in the workflow before 
+  # applying changes to production.
+    deploy-to-prod:
+      runs-on: self-hosted
+      permissions:
+        contents: read
+        issues: write
+      needs:  terraform
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+  
+        - name: Set up Terraform
+          uses: hashicorp/setup-terraform@v3
+         
+        - name: Initialize Terraform
+          run: terraform init
+  
+        - name: Validate Terraform
+          run: terraform validate
+      
+        - name: Plan Terraform changes
+          run: terraform plan -var-file=Environments/prod/terraform.tfvars -out=plan-prod.tfplan
+  
+        - name: Manual Approval
+          if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+          id: approval
+          uses: trstringer/manual-approval@v1
+          with:
+            approvers: darey-io, uzukwujp # As per organisation standard or requirement
+            secret: ${{ secrets.GITHUB_TOKEN }}
+            minimum-approvals: 1
+            issue-title: "Manual approval required for Xtern-pod-d-Terraform pipeline"
+            issue-body: |
+              Workflow is pending manual review.
+              URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              Required approvers: [[darey-io, uzukwujp]] # As per organisation standard or requirement 
+              Respond "approved", "approve", "lgtm", "yes" to continue workflow or "denied", "deny", "no" to cancel.
+  
+        - name: Terraform Apply
+          if: github.event_name == 'push' && github.ref == 'refs/heads/main' && ${{ steps.approval.outputs.approved }} == 'true'
+          run: terraform apply --auto-approve plan-prod.tfplan
