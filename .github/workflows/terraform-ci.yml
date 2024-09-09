@@ -28,6 +28,13 @@ jobs:
       with:
         terraform_version: ${{ env.TF_VERSION }}
 
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
     - name: Terraform Init
       run: terraform init
       working-directory: .
@@ -58,7 +65,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
 
-    - name: Terraform Plan for Non-Sandbox Environments
+    - name: Terraform Plan for Production (main branch)
       if: github.ref == 'refs/heads/main'
       run: terraform plan -out=tfplan
       working-directory: .
@@ -72,8 +79,5 @@ jobs:
       uses: hmarr/auto-approve-action@v2
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # The Apply to Production Environment step is intentionally omitted to prevent deployment to production directly from the workflow
 
