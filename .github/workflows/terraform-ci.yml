@@ -60,7 +60,7 @@ jobs:
         issue-body: |
           Workflow is pending manual review.
           URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          Required approvers: [Mitchxxx,uzukwujp]
+          Required approvers: [adeolu-rabiu,uzukwujp]
           Respond "approved", "approve", "lgtm", "yes" to continue workflow or "denied", "deny", "no" to cancel.
 
     - name: Terraform Apply
