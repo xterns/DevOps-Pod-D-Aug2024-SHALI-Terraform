@@ -17,35 +17,17 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: System Information
+    - name: List Directory Contents
       run: |
-        echo "OS Information:"
-        uname -a
-        echo "PATH:"
-        echo $PATH
-        echo "Installed Packages:"
-        if command -v apt &> /dev/null; then
-          apt list --installed
-        elif command -v yum &> /dev/null; then
-          yum list installed
-        elif command -v brew &> /dev/null; then
-          brew list
-        else
-          echo "Unable to determine package manager"
-        fi
+        echo "Current directory: $PWD"
+        echo "Contents of current directory:"
+        ls -R
 
-    - name: Install unzip
+    - name: Change to Terraform Directory
       run: |
-        if command -v apt-get &> /dev/null; then
-          sudo apt-get update && sudo apt-get install -y unzip
-        elif command -v yum &> /dev/null; then
-          sudo yum install -y unzip
-        elif command -v brew &> /dev/null; then
-          brew install unzip
-        else
-          echo "Unable to install unzip: Unknown package manager"
-          exit 1
-        fi
+        cd path/to/terraform/files
+        echo "Current directory after change: $PWD"
+        ls -la
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1
@@ -59,7 +41,7 @@ jobs:
       run: terraform fmt -check
 
     - name: Terraform Plan
-      run: terraform plan -input=false
+      run: terraform plan -out=tfplan
 
     - name: Terraform Apply
       if: github.ref == 'refs/heads/"main"' && github.event_name == 'push'
