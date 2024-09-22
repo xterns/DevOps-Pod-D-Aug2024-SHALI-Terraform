@@ -17,17 +17,15 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: List Directory Contents
+    - name: Debug Information
       run: |
         echo "Current directory: $PWD"
         echo "Contents of current directory:"
-        ls -R
-
-    - name: Change to Terraform Directory
-      run: |
-        cd path/to/terraform/files
-        echo "Current directory after change: $PWD"
         ls -la
+        echo "All .tf files in the repository:"
+        find . -name "*.tf"
+        echo "Git status:"
+        git status
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1
@@ -35,13 +33,17 @@ jobs:
         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
     - name: Terraform Init
-      run: terraform init
+      run: |
+        echo "Running terraform init in directory: $PWD"
+        terraform init
 
     - name: Terraform Format
       run: terraform fmt -check
 
     - name: Terraform Plan
-      run: terraform plan -out=tfplan
+      run: |
+        echo "Running terraform plan in directory: $PWD"
+        terraform plan -out=tfplan
 
     - name: Terraform Apply
       if: github.ref == 'refs/heads/"main"' && github.event_name == 'push'
