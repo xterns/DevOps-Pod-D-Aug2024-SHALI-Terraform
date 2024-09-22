@@ -1,6 +1,6 @@
 output "instance_id" {
   description = "ID of the EC2 instance"
-  value       = var.use_asg ? null : aws_instance.pkrtf[0].id
+  value       = var.use_asg ? null : aws_instance.Podtf[0].id
 }
 
 output "asg_id" {
