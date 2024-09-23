@@ -1,5 +1,5 @@
 resource "aws_security_group" "ec2_security_group" {
-  name        = "Podsg"
+  name        = "Podsg2"
   description = "allow access on ports 80 and 22 and 443"
 
   ingress {
@@ -101,5 +101,26 @@ data "aws_subnets" "default" {
   filter {
     name   = "vpc-id"
     values = [data.aws_vpc.default.id]
+  }
+}
+resource "aws_s3_bucket" "xternal-terraform-bucket" {
+  bucket = "xternal-terraform-bucket"
+  # Add other necessary configurations here
+}
+
+resource "aws_s3_bucket_versioning" "versioning_example" {
+  bucket = aws_s3_bucket.xternal-terraform-bucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_dynamodb_table" "terraform-db-lock-table" {
+  name = "terraform-db-lock-table"
+  hash_key = "LockID"
+  billing_mode = "PAY_PER_REQUEST"
+  attribute {
+    name = "LockID"
+    type = "S"  # String type
   }
 }
