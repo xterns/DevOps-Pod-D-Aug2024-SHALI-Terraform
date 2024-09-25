@@ -1,55 +1,55 @@
 # project to update terraform module for ec2 instances to accomodate autoscaling group
 
 
-Overview
-This module allows you to deploy either standalone EC2 instances or Auto Scaling Groups (ASGs) in AWS. The new use_asg variable determines whether the module creates a standalone EC2 instance or an ASG.
-Variables
+#Overview
+#This module allows you to deploy either standalone EC2 instances or Auto Scaling Groups (ASGs) in AWS. The new use_asg variable determines whether the module creates a standalone EC2 instance or an ASG.
+#Variables
 
-use_asg (boolean): Set to true to deploy an Auto Scaling Group, or false to deploy a standalone EC2 instance. Default is false.
+#use_asg (boolean): Set to true to deploy an Auto Scaling Group, or false to deploy a standalone EC2 instance. Default is false.
 
-(Other existing variables should be listed here)
-Usage
-Deploying a Standalone EC2 Instance
-To deploy a standalone EC2 instance, set use_asg to false or omit it (as false is the default value).
-module "ec2_instance" {
-  source = "path/to/ec2_module"
+# (Other existing variables should be listed here)
+# Usage
+# Deploying a Standalone EC2 Instance
+# To deploy a standalone EC2 instance, set use_asg to false or omit it (as false is the default value).
+# module "ec2_instance" {
+#  source = "path/to/ec2_module"
 
-  use_asg = false  # This is optional, as false is the default
-  instance_type = "t2.micro"
-  ami_id = "ami- *******"  # generate your ami and input it into the argument string
+ # use_asg = false  # This is optional, as false is the default
+ # instance_type = "t2.micro"
+ # ami_id = "ami- *******"  # generate your ami and input it into the argument string
   # Other variables as needed
-}
-Deploying an Auto Scaling Group
-To deploy an Auto Scaling Group, set use_asg to true.
-module "ec2_asg" {
-  source = "path/to/ec2_module"
+#}
+# Deploying an Auto Scaling Group
+# To deploy an Auto Scaling Group, set use_asg to true.
+# module "ec2_asg" {
+ # source = "path/to/ec2_module"
 
-  use_asg = true
-  instance_type = "t2.micro"
-  ami_id = "ami-0c55b159cbfafe1f0"
-  min_size = 1
-  max_size = 3
-  desired_capacity = 2
+ # use_asg = true
+ # instance_type = "t2.micro"
+ # ami_id = "ami-********" # generate your ami and input it into the argument string
+ # min_size = 1
+ # max_size = 3
+ # desired_capacity = 2
   # Other variables as needed
-}
-Outputs
-The module outputs will differ based on whether a standalone EC2 instance or an ASG is created:
+# }
+# Outputs
+# The module outputs will differ based on whether a standalone EC2 instance or an ASG is created:
 
-For standalone EC2 instances:
+# For standalone EC2 instances:
 
-instance_id: The ID of the created EC2 instance
-instance_public_ip: The public IP address of the EC2 instance (if applicable)
-
-
-For Auto Scaling Groups:
-
-asg_name: The name of the created Auto Scaling Group
-asg_arn: The ARN (Amazon Resource Name) of the Auto Scaling Group
+# instance_id: The ID of the created EC2 instance
+# instance_public_ip: The public IP address of the EC2 instance (if applicable)
 
 
+# For Auto Scaling Groups:
 
-Note:
+# asg_name: The name of the created Auto Scaling Group
+# asg_arn: The ARN (Amazon Resource Name) of the Auto Scaling Group
 
-When use_asg is set to true, make sure to provide values for min_size, max_size, and desired_capacity.
-The module will create either an EC2 instance or an ASG, but not both simultaneously.
-Ensure that your IAM permissions are set correctly for creating either EC2 instances or Auto Scaling Groups, depending on your use case.
+
+
+# Note:
+
+# When use_asg is set to true, make sure to provide values for min_size, max_size, and desired_capacity.
+# The module will create either an EC2 instance or an ASG, but not both simultaneously.
+# Ensure that your IAM permissions are set correctly for creating either EC2 instances or Auto Scaling Groups, depending on your use case.
