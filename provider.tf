@@ -5,6 +5,9 @@ terraform {
       version = "~> 4.16"
     }
   }
+  backend "s3" {
+    bucket = "my-bucket"
+  }
   required_version = ">= 1.2.0"
 }
 
