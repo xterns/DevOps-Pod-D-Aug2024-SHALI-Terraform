@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 resource "aws_security_group" "ec2_security_group" {
   name        = "Podsg2"
   description = "allow access on ports 80 and 22 and 443"
@@ -41,11 +40,11 @@ resource "aws_security_group" "ec2_security_group" {
   tags = {
     Name = "Pod-D"
   }
-=======
+}
 module "security" {
   source = "./modules/security"
   vpc_id = module.network.vpc_id
->>>>>>> feat/tdp-242
+
 }
 
 module "network" {
