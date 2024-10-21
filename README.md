@@ -87,3 +87,69 @@ To maintain a clear and consistent history of changes in the project, follow the
     Final Review:
 
         Before merging a pull request, review the CHANGELOG.md to confirm it accurately reflects the changes made.
+
+resource "aws_instance" "Podtf" {
+  count                  = var.use_asg ? 0 : 1
+  ami                    = var.ami_id
+  instance_type          = var.instance_type
+  key_name               = var.key_name
+  vpc_security_group_ids = [aws_security_group.ec2_security_group.id]
+  tags = {
+    Name = "Pod-D-EC2"
+  }
+}
+#resource "aws_autoscaling_group" "asg" {
+ # count               = var.use_asg ? 1 : 0
+  name                = "Pod-D-ASG"
+  min_size            = var.min_size
+  max_size            = var.max_size
+  desired_capacity    = var.desired_capacity
+  vpc_zone_identifier = data.aws_subnets.default.ids
+}
+
+  launch_template {
+    id      = aws_launch_template.asg_launch_template[0].id
+    version = "$Latest"
+  }
+
+  tag {
+    key                 = "Name"
+    value               = "Pod-D-ASG-Instance"
+    propagate_at_launch = true
+  }
+
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+resource "aws_s3_bucket" "xternal-terraform-bucket" {
+  bucket = "xternal-terraform-bucket"
+  # Add other necessary configurations here
+}
+
+resource "aws_s3_bucket_versioning" "versioning_example" {
+  bucket = aws_s3_bucket.xternal-terraform-bucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_dynamodb_table" "terraform-db-lock-table" {
+  name = "terraform-db-lock-table"
+  hash_key = "LockID"
+  billing_mode = "PAY_PER_REQUEST"
+  attribute {
+    name = "LockID"
+    type = "S"  # String type
+  }
+}
+module "security" {
+  source = "./module/security"
+  vpc_id = module.ec2.vpc_id
+}
