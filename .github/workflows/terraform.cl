@@ -23,14 +23,16 @@ jobs:
       id-token: write
       contents: read
       pull-requests: write
-      security-events: write  # Required for GitHub Security tab
+      security-events: write
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Install unzip
-      run: sudo apt-get update && sudo apt-get install -y unzip
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y unzip curl # Install both curl and unzip in the same command to ensure they are available
 
     - name: Install tfsec
       run: |
@@ -79,7 +81,7 @@ jobs:
     name: 'Terraform Workflow'
     runs-on: self-hosted
     needs: security_scan
-    
+
     permissions:
       id-token: write
       contents: read
@@ -89,9 +91,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Install unzip
-      run: sudo apt-get update && sudo apt-get install -y unzip
-      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y unzip curl
+
     - name: Setup Terraform Cache
       uses: actions/cache@v3
       with:
@@ -106,9 +110,9 @@ jobs:
         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
         aws-region: ${{ env.AWS_REGION }}
         role-duration-seconds: 3600
-        
+
     - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v1
+      uses: hashicorp/setup-terraform@v2 # Use the updated version of the setup-terraform action
       with:
         terraform_version: ${{ env.TF_VERSION }}
         terraform_wrapper: false
