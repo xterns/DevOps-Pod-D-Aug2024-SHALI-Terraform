@@ -18,7 +18,7 @@ env:
 jobs:
   security_scan:
     name: 'Security Scan'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
@@ -31,7 +31,7 @@ jobs:
 
     - name: Install tfsec
       run: |
-        curl -L "https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64" -o tfsec
+        curl -sL "https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64" -o tfsec
         chmod +x tfsec
         sudo mv tfsec /usr/local/bin/
 
@@ -43,20 +43,15 @@ jobs:
           --out tfsec.sarif \
           --soft-fail \
           --config-file ${{ env.TERRAFORM_WORKING_DIR }}/.tfsec.yml || true
+        echo "TFSEC_OUTPUT<<EOF" >> $GITHUB_ENV
+        cat tfsec.sarif >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
 
     - name: Upload SARIF file
       uses: github/codeql-action/upload-sarif@v2
       with:
         sarif_file: tfsec.sarif
         category: tfsec
-
-    - name: Generate tfsec report
-      if: github.event_name == 'pull_request'
-      run: |
-        TFSEC_OUTPUT=$(tfsec . --no-color --include-passed)
-        echo "TFSEC_OUTPUT<<EOF" >> $GITHUB_ENV
-        echo "$TFSEC_OUTPUT" >> $GITHUB_ENV
-        echo "EOF" >> $GITHUB_ENV
 
     - name: Comment PR with tfsec results
       if: github.event_name == 'pull_request'
@@ -99,11 +94,12 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-terraform-
 
-    - name: Configure AWS credentials
+    - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
         aws-region: ${{ env.AWS_REGION }}
+        role-duration-seconds: 3600
         
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v2
@@ -116,7 +112,7 @@ jobs:
       working-directory: ${{ env.TERRAFORM_WORKING_DIR }}
 
     - name: Terraform Init
-      run: terraform init
+      run: terraform init -backend-config="key=terraform/state"
       working-directory: ${{ env.TERRAFORM_WORKING_DIR }}
 
     - name: Terraform Validate
@@ -127,8 +123,8 @@ jobs:
       id: plan
       run: |
         terraform plan -out=tfplan -detailed-exitcode -no-color 2>&1 | tee plan.txt
+        echo "PLAN_EXIT_CODE=$?" >> $GITHUB_ENV
       working-directory: ${{ env.TERRAFORM_WORKING_DIR }}
-      continue-on-error: true
 
     - name: Update Pull Request
       uses: actions/github-script@v6
