@@ -31,8 +31,8 @@ jobs:
 
     - name: Install tfsec
       run: |
-        curl -L "https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64" -o tfsec
-        echo "expected-checksum  tfsec" | sha256sum -c -
+        curl -sL "https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-checksums.txt" -o tfsec-checksums.txt
++       grep " tfsec" tfsec-checksums.txt | sha256sum -c -
         chmod +x tfsec
 
     - name: Run tfsec
@@ -99,10 +99,13 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-terraform-
 
-    - role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-        aws-region: ${{ env.AWS_REGION }}
-        role-session-name: GitHubActions
-        duration-seconds: 3600
+    - name: Configure AWS Credentials
++     uses: aws-actions/configure-aws-credentials@v1
++     with:
++        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
++        aws-region: ${{ env.AWS_REGION }}
++        role-session-name: GitHubActions
++        duration-seconds: 3600
         
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v2
@@ -115,7 +118,6 @@ jobs:
       working-directory: ${{ env.TERRAFORM_WORKING_DIR }}
 
     - name: Terraform Init
-      run: terraform init
       run: terraform init -backend-config="key=terraform/state"
 
     - name: Terraform Validate
