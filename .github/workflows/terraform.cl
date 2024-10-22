@@ -96,13 +96,13 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y unzip curl
 
-    - name: Setup Terraform Cache
-      uses: actions/cache@v3
-      with:
-        path: ~/.terraform.d/plugin-cache
-        key: ${{ runner.os }}-terraform-${{ hashFiles('**/.terraform.lock.hcl') }}
-        restore-keys: |
-          ${{ runner.os }}-terraform-
+    ;; - name: Setup Terraform Cache
+    ;;   uses: actions/cache@v3
+    ;;   with:
+    ;;     path: ~/.terraform.d/plugin-cache
+    ;;     key: ${{ runner.os }}-terraform-${{ hashFiles('**/.terraform.lock.hcl') }}
+    ;;     restore-keys: |
+    ;;       ${{ runner.os }}-terraform-
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v2
