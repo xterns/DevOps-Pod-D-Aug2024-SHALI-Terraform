@@ -1,50 +1,93 @@
-name: 'Terraform'
+name: 'Terraform and Security Scans'
+
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+      - feature/*
   pull_request:
+  schedule:
+    - cron: '16 3 * * 3'  # Schedule for tfsec scans
+
 permissions:
   contents: read
+
 jobs:
   terraform:
-    name: 'Terraform'
-    runs-on: self-hosted
-    environment: production
+    name: 'Terraform Workflow'
+    runs-on: ubuntu-latest
+    environment: prod
     defaults:
       run:
         shell: bash
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Debug Information
-      run: |
-        echo "Current directory: $PWD"
-        echo "Contents of current directory:"
-        ls -la
-        echo "All .tf files in the repository:"
-        find . -name "*.tf"
-        echo "Git status:"
-        git status
+      - name: Debug Information
+        run: |
+          echo "Current directory: $PWD"
+          echo "Contents of current directory:"
+          ls -la
+          echo "All .tf files in the repository:"
+          find . -name "*.tf"
+          echo "Git status:"
+          git status
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
-      with:
-        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-    - name: Terraform Init
-      run: |
-        echo "Running terraform init in directory: $PWD"
-        terraform init
+      - name: Terraform Init
+        run: |
+          echo "Running terraform init in directory: $PWD"
+          terraform init
 
-    - name: Terraform Format
-      run: terraform fmt -check
+      - name: Terraform Format Check
+        run: terraform fmt -check
 
-    - name: Terraform Plan
-      run: |
-        echo "Running terraform plan in directory: $PWD"
-        terraform plan -out=tfplan
+      - name: Terraform Plan
+        run: |
+          echo "Running terraform plan in directory: $PWD"
+          terraform plan -out=tfplan
 
-    - name: Terraform Apply
-      if: github.ref == 'refs/heads/"main"' && github.event_name == 'push'
-      run: terraform apply -auto-approve -input=false
+      - name: Manual Approval
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: approval
+        uses: trstringer/manual-approval@v1
+        with:
+          approvers: darey-io, uzukwujp
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          minimum-approvals: 1
+          issue-title: "Manual approval required for Terraform pipeline"
+          issue-body: |
+            Workflow is pending manual review.
+            URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            Required approvers: [darey-io, uzukwujp]
+            Respond "approved", "approve", "lgtm", "yes" to continue workflow or "denied", "deny", "no" to cancel
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
+
+  tfsec:
+    name: 'Run tfsec SARIF Report'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-sarif-action@21ded20e8ca120cd9d3d6ab04ef746477542a608
+        with:
+          sarif_file: tfsec.sarif
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
