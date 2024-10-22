@@ -56,7 +56,7 @@ module "network" {
   name_prefix        = var.name_prefix
   environment        = var.environment
   tags               = var.tags
-
+}
 resource "aws_security_group" "ec2_security_group" {
   name        = "Podsg2"
   description = "allow access on ports 80 and 22 and 443"
