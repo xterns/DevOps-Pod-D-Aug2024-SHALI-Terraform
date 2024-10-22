@@ -31,8 +31,8 @@ jobs:
 
     - name: Install tfsec
       run: |
-        curl -sL "https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-checksums.txt" -o tfsec-checksums.txt
-+       grep " tfsec" tfsec-checksums.txt | sha256sum -c -
++       curl -sL "https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64" -o tfsec 
++       grep " tfsec-linux-amd64" tfsec-checksums.txt | sha256sum -c -
         chmod +x tfsec
 
     - name: Run tfsec
@@ -53,10 +53,7 @@ jobs:
     - name: Generate tfsec report
       if: github.event_name == 'pull_request'
       run: |
-        TFSEC_OUTPUT=$(tfsec . --no-color --include-passed)
-        echo "TFSEC_OUTPUT<<EOF" >> $GITHUB_ENV
-        echo "$TFSEC_OUTPUT" >> $GITHUB_ENV
-        echo "EOF" >> $GITHUB_ENV
+        echo "TFSEC_OUTPUT=$TFSEC_OUTPUT" >> $GITHUB_ENV
 
     - name: Comment PR with tfsec results
       if: github.event_name == 'pull_request'
