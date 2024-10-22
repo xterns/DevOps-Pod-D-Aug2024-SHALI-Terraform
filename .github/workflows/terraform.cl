@@ -32,7 +32,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y unzip curl # Install both curl and unzip
+        sudo apt-get install -y unzip curl # Ensure unzip and curl are installed
 
     - name: Install tfsec
       run: |
@@ -79,7 +79,7 @@ jobs:
 
   terraform:
     name: 'Terraform Workflow'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: security_scan
 
     permissions:
