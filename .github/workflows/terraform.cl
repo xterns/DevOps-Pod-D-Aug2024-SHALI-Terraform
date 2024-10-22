@@ -7,9 +7,9 @@ on:
       - feature/*
     paths:
       - 'Environments/prod/**'
-      - '.github/workflows/**'  # Include workflow changes
-      - '*.tf'                 # Include root terraform files if any
-      - '**.tfvars'           # Include terraform variables
+      - '.github/workflows/**'
+      - '*.tf'
+      - '**.tfvars'
   pull_request:
     branches:
       - main
@@ -23,7 +23,7 @@ on:
 env:
   TF_VERSION: "1.5.7"
   AWS_REGION: "us-east-1"
-  TERRAFORM_WORKING_DIR: "./Environments/prod"  # Updated working directory
+  TERRAFORM_WORKING_DIR: "./Environments/prod"
   TFSEC_VERSION: "v1.28.4"
 
 jobs:
@@ -34,15 +34,10 @@ jobs:
       contents: read
       pull-requests: write
       security-events: write
-      
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y unzip wget
 
     - name: Install tfsec
       run: |
@@ -63,52 +58,6 @@ jobs:
         sarif_file: tfsec.sarif
         category: tfsec
 
-    - name: Post tfsec findings
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          const { promisify } = require('util');
-          const readFile = promisify(fs.readFile);
-          
-          async function processFindings() {
-            const sarifContent = await readFile('tfsec.sarif', 'utf8');
-            const sarif = JSON.parse(sarifContent);
-            const findings = sarif.runs[0].results;
-            
-            if (findings.length === 0) {
-              const comment = '### ✅ TFSec Security Scan: No issues found';
-              await github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: comment
-              });
-              return;
-            }
-            
-            let comment = '### ⚠️ TFSec Security Scan Results\n\n';
-            findings.forEach(finding => {
-              const messageSize = Buffer.byteLength(finding.message.text, 'utf8');
-              const messageBuf = Buffer.alloc(messageSize);
-              messageBuf.write(finding.message.text, 'utf8');
-              
-              comment += `- **${finding.level}**: ${messageBuf.toString('utf8')}\n`;
-              comment += `  - Location: ${finding.locations[0].physicalLocation.artifactLocation.uri}\n`;
-              comment += `  - Rule: ${finding.ruleId}\n\n`;
-            });
-            
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
-          }
-          
-          await processFindings();
-
   terraform:
     name: 'Terraform Workflow'
     needs: security_scan
@@ -123,11 +72,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y unzip curl wget
-      
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
@@ -179,23 +123,21 @@ jobs:
           const fs = require('fs');
           const { promisify } = require('util');
           const readFile = promisify(fs.readFile);
-          
+
           async function postPlan() {
             const planContent = await readFile('${{ env.TERRAFORM_WORKING_DIR }}/plan.txt', 'utf8');
             const maxLength = 65000;
-            
+
             let comment = '### Terraform Plan Summary\n\n';
-            
+
             if (Buffer.byteLength(planContent, 'utf8') > maxLength) {
               const truncatedBuf = Buffer.alloc(maxLength);
               Buffer.from(planContent).copy(truncatedBuf, 0, 0, maxLength);
               comment += '```diff\n' + truncatedBuf.toString('utf8') + '\n...[Plan output truncated]...\n```';
             } else {
-              const planBuf = Buffer.alloc(Buffer.byteLength(planContent, 'utf8'));
-              planBuf.write(planContent, 'utf8');
-              comment += '```diff\n' + planBuf.toString('utf8') + '\n```';
+              comment += '```diff\n' + planContent + '\n```';
             }
-            
+
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -203,7 +145,7 @@ jobs:
               body: comment
             });
           }
-          
+
           await postPlan();
 
     - name: Terraform Plan (main branch)
@@ -212,6 +154,21 @@ jobs:
       run: |
         terraform plan -no-color -input=false -out=tfplan
       working-directory: ${{ env.TERRAFORM_WORKING_DIR }}
+
+    - name: Manual Approval
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      id: approval
+      uses: trstringer/manual-approval@v1
+      with:
+        approvers: darey-io, uzukwujp
+        secret: ${{ secrets.GITHUB_TOKEN }}
+        minimum-approvals: 1
+        issue-title: "Manual approval required for Terraform pipeline"
+        issue-body: |
+          Workflow is pending manual review.
+          URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Required approvers: [darey-io, uzukwujp]
+          Respond "approved", "approve", "lgtm", "yes" to continue workflow or "denied", "deny", "no" to cancel
 
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
