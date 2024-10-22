@@ -4,16 +4,26 @@ on:
   push:
     branches:
       - main
-      - 'feature/*'
+      - feature/*
+    paths:
+      - 'Environments/prod/**'
+      - '.github/workflows/**'  # Include workflow changes
+      - '*.tf'                 # Include root terraform files if any
+      - '**.tfvars'           # Include terraform variables
   pull_request:
     branches:
       - main
-      - 'feature/*'
+      - feature/*
+    paths:
+      - 'Environments/prod/**'
+      - '.github/workflows/**'
+      - '*.tf'
+      - '**.tfvars'
 
 env:
   TF_VERSION: "1.5.7"
   AWS_REGION: "us-east-1"
-  TERRAFORM_WORKING_DIR: "."
+  TERRAFORM_WORKING_DIR: "./Environments/prod"  # Updated working directory
   TFSEC_VERSION: "v1.28.4"
 
 jobs:
