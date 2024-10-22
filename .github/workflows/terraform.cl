@@ -32,7 +32,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y unzip curl # Install both curl and unzip in the same command to ensure they are available
+        sudo apt-get install -y unzip curl # Install both curl and unzip
 
     - name: Install tfsec
       run: |
