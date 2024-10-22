@@ -11,10 +11,10 @@ on:
       - 'feature/*'
 
 env:
-  TF_VERSION: "1.5.7"  # Updated to a more recent version
+  TF_VERSION: "1.5.7"
   AWS_REGION: "us-east-1"
   TERRAFORM_WORKING_DIR: "."
-  TFSEC_VERSION: "v1.28.4"  # Explicitly specify tfsec version
+  TFSEC_VERSION: "v1.28.4"
 
 jobs:
   security_scan:
@@ -28,6 +28,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y unzip wget
 
     - name: Install tfsec
       run: |
@@ -95,6 +100,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y unzip curl wget
       
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
