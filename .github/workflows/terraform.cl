@@ -136,30 +136,30 @@ jobs:
         echo "PLAN_EXIT_CODE=$?" >> $GITHUB_ENV
       working-directory: ${{ env.TERRAFORM_WORKING_DIR }}
 
-    - name: Update Pull Request
-      uses: actions/github-script@v6
-      if: github.event_name == 'pull_request'
-      with:
-        script: |
-          const fs = require('fs');
-          const plan = fs.readFileSync('${{ env.TERRAFORM_WORKING_DIR }}/plan.txt', 'utf8');
-          const maxGitHubBodyLength = 65536;
-          const truncatedPlan = plan.length > maxGitHubBodyLength 
-            ? plan.substring(0, maxGitHubBodyLength) + '\n\n... Plan too long to display completely ...'
-            : plan;
+    ;; - name: Update Pull Request
+    ;;   uses: actions/github-script@v6
+    ;;   if: github.event_name == 'pull_request'
+    ;;   with:
+    ;;     script: |
+    ;;       const fs = require('fs');
+    ;;       const plan = fs.readFileSync('${{ env.TERRAFORM_WORKING_DIR }}/plan.txt', 'utf8');
+    ;;       const maxGitHubBodyLength = 65536;
+    ;;       const truncatedPlan = plan.length > maxGitHubBodyLength 
+    ;;         ? plan.substring(0, maxGitHubBodyLength) + '\n\n... Plan too long to display completely ...'
+    ;;         : plan;
           
-          const comment = `### Terraform Plan Output
-          \`\`\`
-          ${truncatedPlan}
-          \`\`\`
-          `;
+          ;; const comment = `### Terraform Plan Output
+          ;; \`\`\`
+          ;; ${truncatedPlan}
+          ;; \`\`\`
+          ;; `;
           
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: comment
-          });
+          ;; github.rest.issues.createComment({
+          ;;   issue_number: context.issue.number,
+          ;;   owner: context.repo.owner,
+          ;;   repo: context.repo.repo,
+          ;;   body: comment
+          ;; });
 
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
