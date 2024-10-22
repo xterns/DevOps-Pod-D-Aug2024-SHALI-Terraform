@@ -59,33 +59,45 @@ jobs:
       with:
         script: |
           const fs = require('fs');
-          const sarif = JSON.parse(fs.readFileSync('tfsec.sarif', 'utf8'));
-          const findings = sarif.runs[0].results;
+          const { promisify } = require('util');
+          const readFile = promisify(fs.readFile);
           
-          if (findings.length === 0) {
-            const comment = '### ✅ TFSec Security Scan: No issues found';
+          async function processFindings() {
+            const sarifContent = await readFile('tfsec.sarif', 'utf8');
+            const sarif = JSON.parse(sarifContent);
+            const findings = sarif.runs[0].results;
+            
+            if (findings.length === 0) {
+              const comment = '### ✅ TFSec Security Scan: No issues found';
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+              return;
+            }
+            
+            let comment = '### ⚠️ TFSec Security Scan Results\n\n';
+            findings.forEach(finding => {
+              const messageSize = Buffer.byteLength(finding.message.text, 'utf8');
+              const messageBuf = Buffer.alloc(messageSize);
+              messageBuf.write(finding.message.text, 'utf8');
+              
+              comment += `- **${finding.level}**: ${messageBuf.toString('utf8')}\n`;
+              comment += `  - Location: ${finding.locations[0].physicalLocation.artifactLocation.uri}\n`;
+              comment += `  - Rule: ${finding.ruleId}\n\n`;
+            });
+            
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: comment
             });
-            return;
           }
           
-          let comment = '### ⚠️ TFSec Security Scan Results\n\n';
-          findings.forEach(finding => {
-            comment += `- **${finding.level}**: ${finding.message.text}\n`;
-            comment += `  - Location: ${finding.locations[0].physicalLocation.artifactLocation.uri}\n`;
-            comment += `  - Rule: ${finding.ruleId}\n\n`;
-          });
-          
-          await github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: comment
-          });
+          await processFindings();
 
   terraform:
     name: 'Terraform Workflow'
@@ -155,23 +167,34 @@ jobs:
       with:
         script: |
           const fs = require('fs');
-          const plan = fs.readFileSync('${{ env.TERRAFORM_WORKING_DIR }}/plan.txt', 'utf8');
-          const maxLength = 65000; // GitHub has a comment size limit
+          const { promisify } = require('util');
+          const readFile = promisify(fs.readFile);
           
-          let comment = '### Terraform Plan Summary\n\n';
-          
-          if (plan.length > maxLength) {
-            comment += '```diff\n' + plan.slice(0, maxLength) + '\n...[Plan output truncated]...\n```';
-          } else {
-            comment += '```diff\n' + plan + '\n```';
+          async function postPlan() {
+            const planContent = await readFile('${{ env.TERRAFORM_WORKING_DIR }}/plan.txt', 'utf8');
+            const maxLength = 65000;
+            
+            let comment = '### Terraform Plan Summary\n\n';
+            
+            if (Buffer.byteLength(planContent, 'utf8') > maxLength) {
+              const truncatedBuf = Buffer.alloc(maxLength);
+              Buffer.from(planContent).copy(truncatedBuf, 0, 0, maxLength);
+              comment += '```diff\n' + truncatedBuf.toString('utf8') + '\n...[Plan output truncated]...\n```';
+            } else {
+              const planBuf = Buffer.alloc(Buffer.byteLength(planContent, 'utf8'));
+              planBuf.write(planContent, 'utf8');
+              comment += '```diff\n' + planBuf.toString('utf8') + '\n```';
+            }
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
           }
           
-          await github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: comment
-          });
+          await postPlan();
 
     - name: Terraform Plan (main branch)
       id: plan-main
