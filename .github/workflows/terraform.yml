@@ -82,6 +82,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install tfsec
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+          wget -O - https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+
       - name: Run tfsec
         run: |
           mkdir -p results
