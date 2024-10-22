@@ -29,6 +29,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Install unzip
+      run: sudo apt-get update && sudo apt-get install -y unzip
+
     - name: Install tfsec
       run: |
         curl -sL "https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64" -o tfsec
@@ -85,6 +88,9 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+
+    - name: Install unzip
+      run: sudo apt-get update && sudo apt-get install -y unzip
       
     - name: Setup Terraform Cache
       uses: actions/cache@v3
@@ -102,7 +108,7 @@ jobs:
         role-duration-seconds: 3600
         
     - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v2
+      uses: hashicorp/setup-terraform@v1
       with:
         terraform_version: ${{ env.TF_VERSION }}
         terraform_wrapper: false
