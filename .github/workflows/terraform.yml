@@ -15,7 +15,7 @@ permissions:
 jobs:
   terraform:
     name: 'Terraform Workflow'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: prod
     defaults:
       run:
@@ -73,7 +73,7 @@ jobs:
 
   tfsec:
     name: 'Run tfsec SARIF Report'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       actions: read
       contents: read
