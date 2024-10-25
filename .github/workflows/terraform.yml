@@ -43,20 +43,10 @@ jobs:
         run: |
           echo "Running terraform plan in directory: $PWD"
           terraform plan -out=tfplan
-      
-      - name: Configure Docker Permissions
+
+      - name: Pull Manual Approval Action
         run: |
-          if ! groups runner | grep -q docker; then
-            sudo usermod -aG docker $USER
-            # Create docker group if it doesn't exist
-            sudo groupadd -f docker
-            # Add current user to docker group
-            sudo usermod -aG docker $USER
-            # Restart Docker daemon
-            sudo systemctl restart docker
-            # Apply group changes without logout
-            newgrp docker
-          fi
+          sudo docker pull ghcr.io/trstringer/manual-approval:1.9.1
      
       - name: Manual Approval
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -72,9 +62,11 @@ jobs:
             URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
             Required approvers: [darey-io, uzukwujp]
             Respond "approved", "approve", "lgtm", "yes" to continue workflow or "denied", "deny", "no" to cancel
+
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve -input=false
+
   tfsec:
     name: 'Run tfsec SARIF Report'
     runs-on: self-hosted
