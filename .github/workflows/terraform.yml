@@ -1,5 +1,4 @@
 name: 'Terraform and Security Scans'
-
 on:
   push:
     branches:
@@ -8,10 +7,8 @@ on:
   pull_request:
   schedule:
     - cron: '16 3 */3 * *' # Runs at 3:16 AM every third day
-
 permissions:
   contents: read
-
 jobs:
   terraform:
     name: 'Terraform Workflow'
@@ -23,7 +20,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Debug Information
         run: |
           echo "Current directory: $PWD"
@@ -33,24 +29,34 @@ jobs:
           find . -name "*.tf"
           echo "Git status:"
           git status
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v1
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-
       - name: Terraform Init
         run: |
           echo "Running terraform init in directory: $PWD"
           terraform init
-
       - name: Terraform Format Check
         run: terraform fmt -check
-
       - name: Terraform Plan
         run: |
           echo "Running terraform plan in directory: $PWD"
           terraform plan -out=tfplan
+      
+      - name: Configure Docker Permissions
+        run: |
+          if ! groups runner | grep -q docker; then
+            sudo usermod -aG docker $USER
+            # Create docker group if it doesn't exist
+            sudo groupadd -f docker
+            # Add current user to docker group
+            sudo usermod -aG docker $USER
+            # Restart Docker daemon
+            sudo systemctl restart docker
+            # Apply group changes without logout
+            newgrp docker
+          fi
      
       - name: Manual Approval
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -66,11 +72,9 @@ jobs:
             URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
             Required approvers: [darey-io, uzukwujp]
             Respond "approved", "approve", "lgtm", "yes" to continue workflow or "denied", "deny", "no" to cancel
-
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve -input=false
-
   tfsec:
     name: 'Run tfsec SARIF Report'
     runs-on: self-hosted
@@ -81,13 +85,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Install tfsec
         run: |
           sudo apt-get update
           sudo apt-get install -y wget
           wget -O - https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
-
       - name: Run tfsec and verify output
         run: |
           mkdir -p reports
@@ -96,12 +98,10 @@ jobs:
             echo "Creating empty SARIF file"
             echo '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"tfsec","version":"1.0.0"}},"results":[]}]}' > reports/tfsec.sarif
           fi
-
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: reports/tfsec.sarif
-
       - name: Archive SARIF file
         if: always()
         uses: actions/upload-artifact@v4
