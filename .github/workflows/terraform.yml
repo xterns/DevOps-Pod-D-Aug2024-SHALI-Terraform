@@ -44,24 +44,24 @@ jobs:
           echo "Running terraform plan in directory: $PWD"
           terraform plan -out=tfplan
 
-      - name: Pull Manual Approval Action
-        run: |
-          sudo docker pull ghcr.io/trstringer/manual-approval:1.9.1
+      # - name: Pull Manual Approval Action
+      #   run: |
+      #     sudo docker pull ghcr.io/trstringer/manual-approval:1.9.1
      
-      - name: Manual Approval
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        id: approval
-        uses: trstringer/manual-approval@v1
-        with:
-          approvers: darey-io, uzukwujp
-          secret: ${{ secrets.GITHUB_TOKEN }}
-          minimum-approvals: 1
-          issue-title: "Manual approval required for Terraform pipeline"
-          issue-body: |
-            Workflow is pending manual review.
-            URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            Required approvers: [darey-io, uzukwujp]
-            Respond "approved", "approve", "lgtm", "yes" to continue workflow or "denied", "deny", "no" to cancel
+      # - name: Manual Approval
+      #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      #   id: approval
+      #   uses: trstringer/manual-approval@v1
+      #   with:
+      #     approvers: darey-io, uzukwujp
+      #     secret: ${{ secrets.GITHUB_TOKEN }}
+      #     minimum-approvals: 1
+      #     issue-title: "Manual approval required for Terraform pipeline"
+      #     issue-body: |
+      #       Workflow is pending manual review.
+      #       URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      #       Required approvers: [darey-io, uzukwujp]
+      #       Respond "approved", "approve", "lgtm", "yes" to continue workflow or "denied", "deny", "no" to cancel
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
