@@ -63,9 +63,9 @@ jobs:
       #       Required approvers: [darey-io, uzukwujp]
       #       Respond "approved", "approve", "lgtm", "yes" to continue workflow or "denied", "deny", "no" to cancel
 
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve -input=false
+      # - name: Terraform Apply
+      #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      #   run: terraform apply -auto-approve -input=false
 
   tfsec:
     name: 'Run tfsec SARIF Report'
