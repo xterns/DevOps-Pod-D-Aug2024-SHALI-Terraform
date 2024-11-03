@@ -29,6 +29,10 @@ jobs:
           find . -name "*.tf"
           echo "Git status:"
           git status
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v1
         with:
@@ -43,29 +47,9 @@ jobs:
         run: |
           echo "Running terraform plan in directory: $PWD"
           terraform plan -out=tfplan
-
-      # - name: Pull Manual Approval Action
-      #   run: |
-      #     sudo docker pull ghcr.io/trstringer/manual-approval:1.9.1
-     
-      # - name: Manual Approval
-      #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      #   id: approval
-      #   uses: trstringer/manual-approval@v1
-      #   with:
-      #     approvers: darey-io, uzukwujp
-      #     secret: ${{ secrets.GITHUB_TOKEN }}
-      #     minimum-approvals: 1
-      #     issue-title: "Manual approval required for Terraform pipeline"
-      #     issue-body: |
-      #       Workflow is pending manual review.
-      #       URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      #       Required approvers: [darey-io, uzukwujp]
-      #       Respond "approved", "approve", "lgtm", "yes" to continue workflow or "denied", "deny", "no" to cancel
-
-      # - name: Terraform Apply
-      #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      #   run: terraform apply -auto-approve -input=false
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
 
   tfsec:
     name: 'Run tfsec SARIF Report'
@@ -80,7 +64,7 @@ jobs:
       - name: Install tfsec
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget
+          sudo apt-get install -y wget unzip
           wget -O - https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
       - name: Run tfsec and verify output
         run: |
