@@ -1,4 +1,5 @@
 name: 'Terraform and Security Scans'
+
 on:
   push:
     branches:
@@ -7,8 +8,10 @@ on:
   pull_request:
   schedule:
     - cron: '16 3 */3 * *' # Runs at 3:16 AM every third day
+
 permissions:
   contents: read
+
 jobs:
   terraform:
     name: 'Terraform Workflow'
@@ -32,7 +35,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '14'  # or the version you need
+          node-version: '14'  # Specify the version you need
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -88,4 +91,4 @@ jobs:
         with:
           name: tfsec-results
           path: reports/tfsec.sarif
-          retention
+          retention-days: 5
