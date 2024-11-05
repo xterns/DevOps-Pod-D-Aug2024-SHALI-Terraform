@@ -84,4 +84,8 @@ jobs:
           sarif_file: reports/tfsec.sarif
       - name: Archive SARIF file
         if: always()
-        uses: actions/upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfsec-results
+          path: reports/tfsec.sarif
+          retention
